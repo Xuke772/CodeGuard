@@ -17,6 +17,9 @@ dependencies = [
     "tiktoken>=0.7.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["codeguard*"]
+
 [project.scripts]
 codeguard = "codeguard.cli:main"
 
