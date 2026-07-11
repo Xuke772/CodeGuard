@@ -34,10 +34,10 @@ class MockLLM(LLMAdapter):
 
 
 class DeepSeekAdapter(LLMAdapter):
-    def __init__(self, config):
+    def __init__(self, api_key: str, config):
         from openai import OpenAI
         self.client = OpenAI(
-            api_key=config.api_key,
+            api_key=api_key,
             base_url=config.llm.api_base,
         )
         self.model = config.llm.model
