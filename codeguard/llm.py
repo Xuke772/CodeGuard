@@ -2,20 +2,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional
 
+from codeguard.memory import Message
+
 
 @dataclass
 class LLMResponse:
     content: str
     finish_reason: str = "stop"
-
-
-@dataclass
-class Message:
-    role: str
-    content: str
-
-    def to_dict(self) -> dict:
-        return {"role": self.role, "content": self.content}
 
 
 class LLMAdapter(ABC):
