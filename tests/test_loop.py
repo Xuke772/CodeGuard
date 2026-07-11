@@ -138,7 +138,7 @@ class TestAgent:
 
     def test_agent_hitl_workflow(self, temp_workspace):
         mock_llm = MockLLM(responses=[
-            'ACTION: write_file\nPARAMS: {"path": "C:/some_outside_dir/file.txt", "content": "data"}',
+            'ACTION: write_file\nPARAMS: {"path": "/tmp/outside_dir/file.txt", "content": "data"}',
             'ACTION: FINISH\nPARAMS: {"summary": "done"}',
         ])
         hitl = HITLStateMachine()
