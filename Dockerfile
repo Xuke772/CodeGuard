@@ -9,8 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN pip install -e .
+RUN pip install --no-cache-dir -e .
 
-EXPOSE 8080
+EXPOSE 8000
 
-ENTRYPOINT ["python", "-m", "codeguard.cli", "--serve", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python -m uvicorn codeguard.web:create_app --factory --host 0.0.0.0 --port ${PORT:-8000}"]
