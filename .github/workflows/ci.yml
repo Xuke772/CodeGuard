@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openai pyyaml keyring fastapi python-dotenv tiktoken pytest pytest-asyncio pytest-mock
+          pip install openai pyyaml keyring fastapi python-dotenv tiktoken httpx pytest pytest-asyncio pytest-mock
       - name: Run tests
         run: |
           PYTHONPATH=. python -m pytest -v --tb=short --no-header
