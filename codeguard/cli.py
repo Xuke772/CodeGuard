@@ -1,5 +1,5 @@
 import os
-import keyring
+import warnings
 from pathlib import Path
 from codeguard.config import Config, load_config
 from codeguard.llm import DeepSeekAdapter, MockLLM
@@ -7,11 +7,21 @@ from codeguard.tools import create_default_registry
 from codeguard.governance import GuardrailEngine, HITLStateMachine
 from codeguard.loop import Agent
 
+try:
+    import keyring
+    _has_keyring = True
+except ImportError:
+    _has_keyring = False
+
 
 def get_api_key() -> str:
-    key = keyring.get_password("codeguard", "deepseek")
-    if key:
-        return key
+    if _has_keyring:
+        try:
+            key = keyring.get_password("codeguard", "deepseek")
+            if key:
+                return key
+        except Exception:
+            pass
     key = os.environ.get("DEEPSEEK_API_KEY")
     if key:
         return key
@@ -43,7 +53,7 @@ def main():
     parser.add_argument("--project", "-p", help="Project root", default=".")
     parser.add_argument("--serve", action="store_true", help="Start web server")
     parser.add_argument("--host", default="127.0.0.1", help="Web server host")
-    parser.add_argument("--port", type=int, default=8000, help="Web server port")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")), help="Web server port")
     args = parser.parse_args()
 
     if args.serve:

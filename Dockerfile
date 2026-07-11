@@ -13,4 +13,4 @@ RUN pip install -e .
 
 EXPOSE 8080
 
-ENTRYPOINT ["python", "-m", "codeguard.cli", "serve"]
+ENTRYPOINT ["python", "-m", "codeguard.cli", "--serve", "--host", "0.0.0.0", "--port", "8000"]
