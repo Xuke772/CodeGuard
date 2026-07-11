@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -e .
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "python -m uvicorn codeguard.web:create_app --factory --host 0.0.0.0 --port 8080"]
+CMD python -c "from codeguard.web import create_app; import uvicorn, os; uvicorn.run(create_app(), host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))"
