@@ -1,4 +1,5 @@
 import os
+import keyring
 from pathlib import Path
 from codeguard.config import Config, load_config
 from codeguard.llm import DeepSeekAdapter, MockLLM
@@ -7,12 +8,19 @@ from codeguard.governance import GuardrailEngine, HITLStateMachine
 from codeguard.loop import Agent
 
 
+def get_api_key() -> str:
+    key = keyring.get_password("codeguard", "deepseek")
+    if key:
+        return key
+    key = os.environ.get("DEEPSEEK_API_KEY")
+    if key:
+        return key
+    raise RuntimeError("API key not found in keyring or DEEPSEEK_API_KEY environment variable")
+
+
 def create_agent_from_config(config: Config, project_root: Path):
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    if api_key:
-        llm = DeepSeekAdapter(api_key=api_key, config=config)
-    else:
-        llm = MockLLM()
+    api_key = get_api_key()
+    llm = DeepSeekAdapter(api_key=api_key, config=config)
     tool_registry = create_default_registry()
     guardrail = GuardrailEngine()
     for rule in config.guardrails.custom_rules:
