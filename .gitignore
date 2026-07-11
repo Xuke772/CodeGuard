@@ -9,3 +9,4 @@ build/
 .venv/
 venv/
 .pytest_cache/
+test_calc.py
