@@ -2,6 +2,8 @@
 
 A coding agent harness with governance-first architecture. Built as part of the AI4SE final project.
 
+**Live Demo:** https://你的域名.up.railway.app
+
 ## Architecture
 
 CodeGuard implements a six-dimension agent harness:
