@@ -2,7 +2,7 @@
 
 A coding agent harness with governance-first architecture. Built as part of the AI4SE final project.
 
-**Live Demo:** https://codeguard-production-5531.up.railway.app
+**Live Demo:** https://codeguard-production-5531.up.railway.app（国内需 VPN）
 
 ## Architecture
 
