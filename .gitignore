@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 .env
-.codeguard/rules.md
+.codeguard/
 *.egg-info/
 dist/
 build/
