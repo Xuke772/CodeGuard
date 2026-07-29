@@ -31,8 +31,13 @@ class Session:
         self.agent = None
         self.config = load_config()
         self.hitl_pending = False
+        self.created_files: list[str] = []
 
     def start(self):
+        before = set()
+        for f in self.project_root.rglob("*"):
+            if f.is_file():
+                before.add(str(f))
         self.agent = create_agent_from_config(self.config, self.project_root)
         self.logs.append(f"Session started. Task: {self.task}")
         result = self.agent.run(self.task)
@@ -42,6 +47,11 @@ class Session:
             self.logs.append(f"Summary: {result['summary']}")
         if self.status == "HITL_PENDING":
             self.hitl_pending = True
+        after = set()
+        for f in self.project_root.rglob("*"):
+            if f.is_file():
+                after.add(str(f))
+        self.created_files = [f for f in after - before]
         save_sessions()
         return result
 
@@ -55,6 +65,7 @@ def save_sessions():
             "project_root": str(s.project_root),
             "status": s.status,
             "logs": s.logs,
+            "created_files": s.created_files,
         }
     SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
     SESSIONS_FILE.write_text(json.dumps(data, indent=2))
@@ -69,6 +80,7 @@ def load_sessions():
             session = Session(sdata["id"], sdata["task"], sdata["project_root"])
             session.status = sdata.get("status", "done")
             session.logs = sdata.get("logs", [])
+            session.created_files = sdata.get("created_files", [])
             sessions[sid] = session
     except Exception:
         pass
@@ -102,11 +114,12 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="Session not found")
         project_root = Path(session.project_root)
         files = []
-        for f in project_root.rglob("*"):
-            if f.is_file() and ".codeguard" not in str(f) and "__pycache__" not in str(f):
+        for filepath in session.created_files:
+            p = Path(filepath)
+            if p.exists():
                 files.append({
-                    "name": str(f.relative_to(project_root)),
-                    "size": f.stat().st_size,
+                    "name": str(p.relative_to(project_root)),
+                    "size": p.stat().st_size,
                 })
         return {"files": files}
 
