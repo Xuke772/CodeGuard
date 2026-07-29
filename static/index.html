@@ -35,6 +35,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .status-badge.error { background: #da363333; color: #f85149; }
 .hitl-panel { display: none; background: #1f2429; border: 1px solid #d29922; border-radius: 6px; padding: 16px; margin-top: 12px; }
 .hitl-panel.active { display: block; }
+.files-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 6px; margin-top: 12px; }
+.files-panel.active { display: block; }
+.file-item { padding: 6px 12px; cursor: pointer; border-bottom: 1px solid #21262d; }
+.file-item:hover { background: #1f2429; }
+.file-content { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-top: 8px; font-family: 'Consolas', monospace; font-size: 13px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+.history-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #21262d; }
+.history-item:hover { background: #1f2429; }
 </style>
 </head>
 <body>
@@ -71,6 +78,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         <button class="btn btn-danger" onclick="denyAction()">Deny</button>
       </div>
     </div>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <div class="panel-header">History</div>
+    <div class="panel-body" id="historyList">
+      <div style="color:#8b949e;">No sessions yet.</div>
+    </div>
+  </div>
+
+  <div class="files-panel" id="filesPanel">
+    <div class="panel-header">Generated Files</div>
+    <div class="panel-body" id="filesList"></div>
+  </div>
+
+  <div class="panel" id="fileViewer" style="display:none; margin-top:12px;">
+    <div class="panel-header" id="fileViewerName"></div>
+    <div class="panel-body"><div class="file-content" id="fileViewerContent"></div></div>
   </div>
 </div>
 <script>
@@ -110,6 +134,8 @@ function connectWebSocket() {
       document.getElementById('sessionStatus').className = `status-badge ${statusClass}`;
       if (data.hitl_pending) showHitlPanel(data);
       renderLogs(data.logs);
+      loadFiles(currentSessionId);
+      loadHistory();
     });
   };
 }
@@ -148,6 +174,59 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+async function loadFiles(sessionId) {
+  const resp = await fetch(`/sessions/${sessionId}/files`);
+  const data = await resp.json();
+  const panel = document.getElementById('filesPanel');
+  const list = document.getElementById('filesList');
+  if (!data.files || data.files.length === 0) {
+    list.innerHTML = '<div style="color:#8b949e;">No files generated.</div>';
+    panel.classList.remove('active');
+    return;
+  }
+  panel.classList.add('active');
+  list.innerHTML = data.files.map(f =>
+    `<div class="file-item" onclick="viewFile('${sessionId}', '${f.name}')">${f.name} (${f.size} bytes)</div>`
+  ).join('');
+}
+
+async function viewFile(sessionId, path) {
+  const resp = await fetch(`/sessions/${sessionId}/files/${encodeURIComponent(path)}`);
+  const data = await resp.json();
+  document.getElementById('fileViewer').style.display = 'block';
+  document.getElementById('fileViewerName').textContent = data.name;
+  document.getElementById('fileViewerContent').textContent = data.content;
+}
+
+async function loadHistory() {
+  const resp = await fetch('/sessions');
+  const data = await resp.json();
+  const list = document.getElementById('historyList');
+  if (!data.sessions || data.sessions.length === 0) {
+    list.innerHTML = '<div style="color:#8b949e;">No sessions yet.</div>';
+    return;
+  }
+  list.innerHTML = data.sessions.map(s =>
+    `<div class="history-item" onclick="restoreSession('${s.id}')">
+      <b>#${s.id}</b> — ${s.task.substring(0, 50)} — <span style="color:#8b949e;">${s.status}</span>
+    </div>`
+  ).join('');
+}
+
+function restoreSession(sid) {
+  currentSessionId = sid;
+  document.getElementById('statusPanel').style.display = 'block';
+  document.getElementById('sessionId').textContent = '#' + sid;
+  fetch(`/sessions/${sid}`).then(r => r.json()).then(data => {
+    document.getElementById('sessionStatus').textContent = data.status;
+    document.getElementById('sessionStatus').className = 'status-badge ' + (data.status === 'COMPLETED' ? 'completed' : data.status === 'RUNNING' ? 'running' : 'error');
+    renderLogs(data.logs);
+    loadFiles(sid);
+  });
+}
+
+loadHistory();
 </script>
 </body>
 </html>

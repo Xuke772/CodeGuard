@@ -2,6 +2,7 @@ import uuid
 import json
 import asyncio
 import threading
+import os
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +11,9 @@ from pydantic import BaseModel
 from codeguard.config import Config, load_config
 from codeguard.cli import create_agent_from_config
 from codeguard.governance import HITLStatus
+
+
+SESSIONS_FILE = Path(__file__).parent.parent / ".codeguard" / "sessions.json"
 
 
 class TaskRequest(BaseModel):
@@ -38,7 +42,36 @@ class Session:
             self.logs.append(f"Summary: {result['summary']}")
         if self.status == "HITL_PENDING":
             self.hitl_pending = True
+        save_sessions()
         return result
+
+
+def save_sessions():
+    data = {}
+    for sid, s in sessions.items():
+        data[sid] = {
+            "id": s.id,
+            "task": s.task,
+            "project_root": str(s.project_root),
+            "status": s.status,
+            "logs": s.logs,
+        }
+    SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SESSIONS_FILE.write_text(json.dumps(data, indent=2))
+
+
+def load_sessions():
+    if not SESSIONS_FILE.exists():
+        return
+    try:
+        data = json.loads(SESSIONS_FILE.read_text())
+        for sid, sdata in data.items():
+            session = Session(sdata["id"], sdata["task"], sdata["project_root"])
+            session.status = sdata.get("status", "done")
+            session.logs = sdata.get("logs", [])
+            sessions[sid] = session
+    except Exception:
+        pass
 
 
 sessions: dict[str, Session] = {}
@@ -46,6 +79,8 @@ sessions: dict[str, Session] = {}
 
 def create_app() -> FastAPI:
     app = FastAPI(title="CodeGuard", description="Coding Agent Harness WebUI")
+
+    load_sessions()
 
     @app.get("/health")
     async def health():
@@ -59,6 +94,32 @@ def create_app() -> FastAPI:
         thread = threading.Thread(target=session.start, daemon=True)
         thread.start()
         return {"session_id": session_id}
+
+    @app.get("/sessions/{session_id}/files")
+    async def list_files(session_id: str):
+        session = sessions.get(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        project_root = Path(session.project_root)
+        files = []
+        for f in project_root.rglob("*"):
+            if f.is_file() and ".codeguard" not in str(f) and "__pycache__" not in str(f):
+                files.append({
+                    "name": str(f.relative_to(project_root)),
+                    "size": f.stat().st_size,
+                })
+        return {"files": files}
+
+    @app.get("/sessions/{session_id}/files/{file_path:path}")
+    async def read_file(session_id: str, file_path: str):
+        session = sessions.get(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        full_path = Path(session.project_root) / file_path
+        if not full_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        content = full_path.read_text(encoding="utf-8", errors="replace")
+        return {"name": file_path, "content": content}
 
     @app.get("/sessions")
     async def list_sessions():
