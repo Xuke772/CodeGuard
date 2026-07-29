@@ -1,6 +1,7 @@
 import uuid
 import json
 import asyncio
+import threading
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -35,6 +36,8 @@ class Session:
         self.logs.append(f"Agent finished with status: {result['status']}")
         if "summary" in result:
             self.logs.append(f"Summary: {result['summary']}")
+        if self.status == "HITL_PENDING":
+            self.hitl_pending = True
         return result
 
 
@@ -53,6 +56,8 @@ def create_app() -> FastAPI:
         session_id = str(uuid.uuid4())[:8]
         session = Session(session_id, req.task, req.project_root)
         sessions[session_id] = session
+        thread = threading.Thread(target=session.start, daemon=True)
+        thread.start()
         return {"session_id": session_id}
 
     @app.get("/sessions")
