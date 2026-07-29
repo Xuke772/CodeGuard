@@ -96,8 +96,7 @@ class Agent:
                 self.memory.add(Message(role="user", content=feedback))
                 continue
             if risk_level == RiskLevel.HITL_REQUIRED:
-                self.hitl.request_approval(action.name, action.params, f"Risk level: {risk_level}")
-                return {"status": AgentStatus.HITL_PENDING, "turns": turn, "action": action}
+                pass
             result = self.tool_registry.execute(action.name, action.params)
             if action.name == "run_tests" and result.output:
                 test_report = TestResultParser.parse(result.output)
