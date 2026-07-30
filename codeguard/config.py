@@ -14,7 +14,7 @@ class LLMConfig:
 
 @dataclass
 class AgentConfig:
-    max_turns: int = 20
+    max_turns: int = 50
     max_fix_attempts: int = 3
     hitl_timeout: int = 60
 
