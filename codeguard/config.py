@@ -8,7 +8,7 @@ class LLMConfig:
     provider: str = "deepseek"
     model: str = "deepseek-chat"
     api_base: str = "https://api.deepseek.com/v1"
-    temperature: float = 0.1
+    temperature: float = 0.0
     max_tokens: int = 4096
 
 

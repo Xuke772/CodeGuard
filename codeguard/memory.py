@@ -71,7 +71,8 @@ PARAMS: {"path": "hello.py", "content": "print('Hello')"}
 When the task is complete, respond with:
 ACTION: FINISH
 PARAMS: {"summary": "what was done"}
-"""
+
+IMPORTANT: After you create all required files, immediately respond with FINISH. Do NOT continue after the work is done. Do NOT read files you just created unless asked. One write_file → FINISH is correct."""
         if self.memory.project_rules:
             prompt += f"\n\nProject Rules:\n{self.memory.project_rules}"
         return prompt
